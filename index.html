@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Öklid Kitap I Demo</title>
+<style>
+:root{
+  --bg:#f7f5ef;--panel:#ffffff;--ink:#22201c;--muted:#6b665c;--line:#ddd8cc;
+  --cA:#c0504d;--cB:#4f81bd;--ghost:#a59f92;--ext:#8a8478;
+  --hr:#d9342b;--hb:#2a72c9;--hg:#2a8f3c;--accent:#b5781e;--chip:#f1ede3;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1b1a17;--panel:#24221e;--ink:#ece8de;--muted:#a49e90;--line:#3a372f;
+  --cA:#e07a76;--cB:#78a6dd;--ghost:#6d685d;--ext:#8f897c;
+  --hr:#ff6a5f;--hb:#5fa4f0;--hg:#4cc263;--accent:#e0a54a;--chip:#2e2b25;
+}}
+:root[data-theme="dark"]{
+  --bg:#1b1a17;--panel:#24221e;--ink:#ece8de;--muted:#a49e90;--line:#3a372f;
+  --cA:#e07a76;--cB:#78a6dd;--ghost:#6d685d;--ext:#8f897c;
+  --hr:#ff6a5f;--hb:#5fa4f0;--hg:#4cc263;--accent:#e0a54a;--chip:#2e2b25;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Segoe UI",sans-serif}
+header{max-width:1180px;margin:0 auto;padding:18px 16px 6px}
+h1{font-family:Georgia,"Times New Roman",serif;font-weight:normal;font-size:1.6rem;margin:0 0 10px}
+h1 small{color:var(--muted);font-size:1rem}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.95rem}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+#statement{font-family:Georgia,serif;font-style:italic;font-size:1.1rem;margin:14px 0 4px;color:var(--ink)}
+main{max-width:1180px;margin:0 auto;padding:8px 16px 32px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+svg{display:block;width:100%;height:auto;touch-action:none;user-select:none}
+.hint{font-size:.85rem;color:var(--muted);padding:8px 12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.hint button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:.85rem;padding:0}
+.controls{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:12px 0 0}
+.controls button{font-size:.95rem;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);cursor:pointer}
+.controls button:hover,.tab:hover{border-color:var(--muted)}
+#cnt{text-align:center;color:var(--muted);font-size:.85rem;margin-top:6px}
+aside{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;align-self:start}
+#cap{font-size:1.05rem;line-height:1.5;min-height:4.5em}
+#warn{color:var(--hr);font-size:.9rem;margin-top:6px}
+.refs{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.ref{background:var(--chip);border-radius:8px;padding:6px 10px;font-size:.85rem;color:var(--ink)}
+.ref b{color:var(--accent)}
+.ref button{background:none;border:none;color:var(--accent);text-decoration:underline;cursor:pointer;font:inherit;padding:0}
+ol{padding-left:0;margin:16px 0 0;list-style:none;border-top:1px solid var(--line);padding-top:10px}
+ol li button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--muted);padding:5px 8px;border-radius:6px;cursor:pointer;font-size:.85rem;line-height:1.35}
+ol li button:hover{background:var(--chip)}
+ol li button.cur{background:var(--chip);color:var(--ink);font-weight:600}
+ol li button.past{color:var(--ink)}
+/* çizim */
+.base{stroke:var(--ink);stroke-width:2.5;fill:none}
+.ext{stroke:var(--ext);stroke-width:2;fill:none}
+.cA{stroke:var(--cA);stroke-width:2.5;fill:none}
+.cB{stroke:var(--cB);stroke-width:2.5;fill:none}
+.ghost{stroke:var(--ghost);stroke-width:1.4;fill:none;stroke-dasharray:5 5}
+.hl{stroke-width:7;stroke-linecap:round;opacity:.85;fill:none}
+.hl-r{stroke:var(--hr)}.hl-b{stroke:var(--hb)}.hl-g{stroke:var(--hg)}
+.fill{fill:var(--hg);fill-opacity:.15;stroke:none}
+.pt{fill:var(--ink)}
+.lbl{font-size:22px;font-style:italic;font-family:Georgia,serif;fill:var(--ink);text-anchor:middle}
+.seg{font-size:20px;font-family:Georgia,serif;font-style:italic;fill:var(--muted);text-anchor:middle}
+.ring{fill:var(--accent);fill-opacity:.12;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:3 3;cursor:grab}
+.ring:hover{fill-opacity:.3}
+.drawn{stroke-dasharray:1 1;stroke-dashoffset:1;animation:dr 1.3s ease forwards}
+.drawn.ghost{animation:fd .6s ease both;stroke-dasharray:5 5;stroke-dashoffset:0}
+@keyframes dr{to{stroke-dashoffset:0}}
+.fade{animation:fd .6s ease both}
+@keyframes fd{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.drawn,.fade{animation:none;stroke-dashoffset:0}}
+</style></head><body>
+<header>
+  <h1>Öklid, <i>Elemanlar</i> <small>— Kitap I, ilk önermeler</small></h1>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <p id="statement"></p>
+</header>
+<main>
+  <section>
+    <div class="stage">
+      <svg viewBox="0 0 800 600" id="svg"><g id="scene"></g></svg>
+      <div class="hint"><span>İpucu: turuncu halkalı (verilen) noktaları sürükle — inşa her konumda geçerli kalır.</span><button id="resetPos">Konumları sıfırla</button></div>
+    </div>
+    <div class="controls">
+      <button id="prev">◀ Geri</button>
+      <button id="next">İleri ▶</button>
+      <button id="play">▶ Otomatik oynat</button>
+      <button id="restart">⟲ Baştan</button>
+    </div>
+    <div id="cnt"></div>
+  </section>
+  <aside>
+    <div id="cap"></div>
+    <div id="warn"></div>
+    <div class="refs" id="refs"></div>
+    <ol id="list"></ol>
+  </aside>
+</main>
+<script>
+// ---------- geometri yardımcıları ----------
+const sub=(p,q)=>({x:p.x-q.x,y:p.y-q.y}), add=(p,q)=>({x:p.x+q.x,y:p.y+q.y}),
+      mul=(p,k)=>({x:p.x*k,y:p.y*k}), dist=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y),
+      unit=p=>{const l=Math.hypot(p.x,p.y)||1;return {x:p.x/l,y:p.y/l}},
+      mid=(p,q)=>({x:(p.x+q.x)/2,y:(p.y+q.y)/2}),
+      cen=(...ps)=>({x:ps.reduce((s,p)=>s+p.x,0)/ps.length,y:ps.reduce((s,p)=>s+p.y,0)/ps.length});
+// AB üzerine (ekranda A→B yönünün solunda / yukarıda) eşkenar üçgenin tepe noktası
+function apex(A,B){const d=sub(B,A),L=Math.hypot(d.x,d.y);return add(mid(A,B),mul({x:d.y/L,y:-d.x/L},Math.sqrt(3)/2*L))}
+// p noktası etiketi için: doğru yönüne dik, ref noktasından uzağa bakan yön
+function perpAway(dir,p,ref){let n={x:-dir.y,y:dir.x};if((p.x-ref.x)*n.x+(p.y-ref.y)*n.y<0)n=mul(n,-1);return n}
+
+// ---------- sahne öğeleri ----------
+const line=(a,b,c,s,e)=>({k:'line',a,b,c,s,e});
+const hl=(a,b,col,s,e)=>({k:'line',a,b,c:'hl hl-'+col,s,e,hl:true});
+const circ=(o,r,c,s,from,e)=>({k:'circ',o,r,c,s,e,from});
+const poly=(pts,c,s,e)=>({k:'poly',pts,c,s,e});
+const pt=(p,n,s,dir,drag,e)=>({k:'pt',p,n,s,dir,drag,e});
+const txt=(p,str,s,e)=>({k:'txt',p,str,s,e});
+
+const REFS={
+  P1:'<b>Postülat 1:</b> Herhangi bir noktadan herhangi bir noktaya bir doğru çizilebilir.',
+  P2:'<b>Postülat 2:</b> Sonlu bir doğru, bir doğru boyunca kesintisiz uzatılabilir.',
+  P3:'<b>Postülat 3:</b> Her merkez ve her uzaklıkla bir çember çizilebilir.',
+  T15:'<b>Tanım 15:</b> Çemberin merkezinden çevresine çizilen bütün doğrular birbirine eşittir.',
+  OK1:'<b>Ortak Kavram 1:</b> Aynı şeye eşit olanlar birbirine de eşittir.',
+  OK3:'<b>Ortak Kavram 3:</b> Eşitlerden eşitler çıkarılırsa kalanlar eşittir.',
+  'I.1':'<b>Önerme 1:</b> <button data-go="0">Verilen doğru üzerine eşkenar üçgen kurmak →</button>',
+  'I.2':'<b>Önerme 2:</b> <button data-go="1">Verilen noktaya verilen doğruya eşit doğru koymak →</button>'
+};
+
+const PROPS=[
+{
+  tab:'Önerme 1',
+  statement:'Verilen sonlu bir doğru parçası üzerine bir eşkenar üçgen kurmak.',
+  init:{A:{x:300,y:360},B:{x:500,y:360}},
+  steps:[
+    ['Başlangıç: Verilen AB doğru parçası. Bunun üzerine bir eşkenar üçgen kuracağız.',[]],
+    ['Merkezi A, yarıçapı AB olan çemberi çiz.',['P3']],
+    ['Merkezi B, yarıçapı BA olan çemberi çiz.',['P3']],
+    ['İki çemberin kesiştiği noktaya C de.',[]],
+    ['A noktasını C noktasına birleştir: AC.',['P1']],
+    ['B noktasını C noktasına birleştir: BC.',['P1']],
+    ['Kanıt: B ve C, A merkezli çember üzerinde → AC = AB.',['T15']],
+    ['B merkezli çemberde de C ve A çember üzerinde → BC = BA.',['T15']],
+    ['Sonuç: AC ve BC ikisi de AB\'ye eşit → AB = AC = BC. ABC eşkenar üçgendir. Yapılması istenen yapıldı. ∎',['OK1']]
+  ],
+  build({A,B}){
+    const s=dist(A,B),C=apex(A,B),G=cen(A,B,C);
+    return {items:[
+      poly([A,B,C],'fill',8),
+      circ(A,s,'cA',1,B), circ(B,s,'cB',2,A),
+      line(A,B,'base',0), line(A,C,'base',4), line(B,C,'base',5),
+      hl(A,B,'r',6,7), hl(A,C,'r',6,7), hl(B,A,'b',7,8), hl(B,C,'b',7,8),
+      hl(A,B,'g',8), hl(A,C,'g',8), hl(B,C,'g',8),
+      pt(A,'A',0,sub(A,G),'A'), pt(B,'B',0,sub(B,G),'B'), pt(C,'C',3,sub(C,G))
+    ]};
+  }
+},
+{
+  tab:'Önerme 2',
+  statement:'Verilen bir noktaya, verilen bir doğru parçasına eşit bir doğru parçası yerleştirmek.',
+  init:{A:{x:340,y:430},B:{x:450,y:445},C:{x:530,y:385}},
+  steps:[
+    ['Başlangıç: Verilen A noktası ve BC doğru parçası. A noktasına BC\'ye eşit bir doğru koyacağız.',[]],
+    ['A noktasını B noktasına birleştir: AB.',['P1']],
+    ['AB üzerine DAB eşkenar üçgenini kur (soluk çemberler Önerme 1\'in inşasıdır).',['I.1']],
+    ['DA ve DB doğrularını AE ve BF olarak uzat.',['P2']],
+    ['Merkezi B, yarıçapı BC olan çemberi çiz; DF\'yi G noktasında kessin.',['P3']],
+    ['Merkezi D, yarıçapı DG olan çemberi çiz; DE\'yi L noktasında kessin.',['P3']],
+    ['Kanıt: L ve G, D merkezli çember üzerinde → DL = DG.',['T15']],
+    ['DA = DB (eşkenar üçgen). Eşitlerden eşitler çıkarılırsa kalanlar eşit: AL = BG.',['OK3']],
+    ['C ve G, B merkezli çember üzerinde → BC = BG.',['T15']],
+    ['Sonuç: AL ve BC ikisi de BG\'ye eşit → AL = BC. A noktasına BC\'ye eşit AL konuldu. ∎',['OK1']]
+  ],
+  build({A,B,C}){
+    const s=dist(A,B),r=dist(B,C),D=apex(A,B),T=cen(A,B,D);
+    const uA=unit(sub(A,D)),uB=unit(sub(B,D));
+    const E=add(D,mul(uA,s+r+45)),F=add(D,mul(uB,s+r+45));
+    const G=add(B,mul(uB,r)),L=add(D,mul(uA,s+r));
+    return {items:[
+      circ(A,s,'ghost',2,B,3), circ(B,s,'ghost',2,A,3),
+      circ(B,r,'cB',4,C), circ(D,s+r,'cA',5,G),
+      line(B,C,'base',0), line(A,B,'base',1), line(D,A,'base',2), line(D,B,'base',2),
+      line(A,E,'ext',3), line(B,F,'ext',3),
+      hl(D,L,'r',6,7), hl(D,G,'r',6,7),
+      hl(D,A,'b',7,8), hl(D,B,'b',7,8), hl(A,L,'r',7,8), hl(B,G,'r',7,8),
+      hl(B,C,'b',8,9), hl(B,G,'b',8,9),
+      hl(A,L,'g',9), hl(B,C,'g',9),
+      pt(A,'A',0,sub(A,T),'A'), pt(B,'B',0,perpAway(uB,B,C),'B'), pt(C,'C',0,sub(C,B),'C'),
+      pt(D,'D',2,sub(D,T)), pt(E,'E',3,uA), pt(F,'F',3,uB),
+      pt(G,'G',4,perpAway(uB,G,A)), pt(L,'L',5,perpAway(uA,L,B))
+    ]};
+  }
+},
+{
+  tab:'Önerme 3',
+  statement:'Eşit olmayan iki doğru parçası verildiğinde, büyük olandan küçüğe eşit bir parça kesmek.',
+  init:{A:{x:200,y:420},B:{x:640,y:420},C1:{x:300,y:300},C2:{x:450,y:270}},
+  steps:[
+    ['Başlangıç: Eşit olmayan AB ve C doğru parçaları (AB daha büyük). AB\'den C\'ye eşit bir parça keseceğiz.',[]],
+    ['A noktasına C\'ye eşit AD doğrusunu koy (soluk çizgiler Önerme 2\'nin inşasıdır).',['I.2']],
+    ['Merkezi A, yarıçapı AD olan DEF çemberini çiz; AB\'yi E noktasında kessin.',['P3']],
+    ['Kanıt: D ve E, A merkezli çember üzerinde → AE = AD.',['T15']],
+    ['AD = C idi; AE de AD\'ye eşit → AE = C. AB\'den C\'ye eşit AE kesildi. ∎',['OK1']]
+  ],
+  build({A,B,C1,C2}){
+    const c=dist(C1,C2),ab=dist(A,B);
+    // Önerme 2'yi A noktası ve (C1,C2) doğrusu için çalıştır
+    const s2=dist(A,C1),D2=apex(C1,A),uA=unit(sub(A,D2)),uC=unit(sub(C1,D2));
+    const G2=add(C1,mul(uC,c)),D=add(D2,mul(uA,s2+c));
+    const uAB=unit(sub(B,A)),ok=c<ab-1,E=add(A,mul(uAB,c));
+    const items=[
+      line(A,C1,'ghost',1,2), line(D2,A,'ghost',1,2), line(D2,C1,'ghost',1,2),
+      line(D2,G2,'ghost',1,2), line(D2,D,'ghost',1,2),
+      circ(C1,c,'ghost',1,null,2),
+      circ(A,c,'cA',2,D),
+      line(A,B,'base',0), line(C1,C2,'base',0), line(A,D,'base',1),
+      hl(A,D,'r',3,4),
+      txt(add(mid(C1,C2),mul(perpAway(unit(sub(C2,C1)),mid(C1,C2),A),22)),'C',0),
+      pt(A,'A',0,perpAway(uAB,A,D).y>0?perpAway(uAB,A,D):mul(uAB,-1),'A'),
+      pt(B,'B',0,uAB,'B'), pt(C1,'',0,null,'C1'), pt(C2,'',0,null,'C2'),
+      pt(D,'D',1,sub(D,A))
+    ];
+    if(ok){
+      items.splice(items.length-5,0,hl(A,E,'r',3,4),hl(A,E,'g',4),hl(C1,C2,'g',4));
+      items.push(pt(E,'E',2,perpAway(uAB,E,D)));
+    }
+    return {items,warn:ok?'':'Uyarı: C, AB\'den kısa olmalı — aksi halde çember AB\'yi kesmez ve E bulunamaz.'};
+  }
+}];
+
+// ---------- durum ve çizim ----------
+const svg=document.getElementById('svg'),scene=document.getElementById('scene');
+let cur=0,n=0,timer=null,drag=null;
+const pos=PROPS.map(p=>JSON.parse(JSON.stringify(p.init)));
+const f=v=>v.toFixed(2);
+
+function el(it,anim){
+  const a=anim&&it.s===n;
+  switch(it.k){
+    case 'line': return `<line x1="${f(it.a.x)}" y1="${f(it.a.y)}" x2="${f(it.b.x)}" y2="${f(it.b.y)}" class="${it.c}${a?(it.hl?' fade':' drawn'):''}"${a&&!it.hl?' pathLength="1"':''}/>`;
+    case 'circ': {
+      const ang=it.from?Math.atan2(it.from.y-it.o.y,it.from.x-it.o.x)*180/Math.PI:0;
+      return `<circle cx="${f(it.o.x)}" cy="${f(it.o.y)}" r="${f(it.r)}" class="${it.c}${a?' drawn':''}"${a?' pathLength="1"':''} transform="rotate(${f(ang)} ${f(it.o.x)} ${f(it.o.y)})"/>`;
+    }
+    case 'poly': return `<polygon points="${it.pts.map(p=>f(p.x)+','+f(p.y)).join(' ')}" class="${it.c}${a?' fade':''}"/>`;
+    case 'txt': return `<text x="${f(it.p.x)}" y="${f(it.p.y+7)}" class="seg${a?' fade':''}">${it.str}</text>`;
+    case 'pt': {
+      let lab='';
+      if(it.n){const d=unit(it.dir||{x:0,y:-1});lab=`<text class="lbl" x="${f(it.p.x+d.x*20)}" y="${f(it.p.y+d.y*20+8)}">${it.n}</text>`}
+      const ring=it.drag?`<circle class="ring" data-drag="${it.drag}" cx="${f(it.p.x)}" cy="${f(it.p.y)}" r="13"/>`:'';
+      return `<g class="${a?'fade':''}">${ring}<circle class="pt" cx="${f(it.p.x)}" cy="${f(it.p.y)}" r="5" pointer-events="none"/>${lab}</g>`;
+    }
+  }
+}
+
+function render(anim){
+  const P=PROPS[cur],res=P.build(pos[cur]);
+  const vis=res.items.filter(it=>it.s<=n&&n<(it.e??Infinity));
+  // sürüklenebilir noktalar en üstte kalsın
+  vis.sort((x,y)=>(x.k==='pt')-(y.k==='pt'));
+  scene.innerHTML=vis.map(it=>el(it,anim)).join('');
+  document.getElementById('warn').textContent=res.warn||'';
+}
+
+function show(k,anim=true){
+  const P=PROPS[cur];
+  const fwd=k>n;
+  n=Math.max(0,Math.min(P.steps.length-1,k));
+  render(anim&&fwd||anim==='force');
+  const [text,refs]=P.steps[n];
+  document.getElementById('cap').textContent=text;
+  document.getElementById('refs').innerHTML=refs.map(r=>`<div class="ref">${REFS[r]}</div>`).join('');
+  document.getElementById('cnt').textContent=`Adım ${n} / ${P.steps.length-1}`;
+  document.querySelectorAll('#list button').forEach((b,i)=>{b.classList.toggle('cur',i===n);b.classList.toggle('past',i<n)});
+}
+
+function selectProp(i){
+  stop();cur=i;n=0;
+  document.querySelectorAll('.tab').forEach((t,j)=>t.setAttribute('aria-selected',j===i));
+  document.getElementById('statement').textContent='“'+PROPS[i].statement+'”';
+  document.getElementById('list').innerHTML=PROPS[i].steps.map((s,j)=>`<li><button data-step="${j}">${j===0?'Başlangıç':j+'. '}${j===0?'':s[0].replace(/^(Kanıt|Sonuç|Başlangıç):\s*/,'')}</button></li>`).join('');
+  show(0,'force');
+}
+
+function stop(){if(timer){clearInterval(timer);timer=null}document.getElementById('play').textContent='▶ Otomatik oynat'}
+function play(){
+  if(timer){stop();return}
+  if(n>=PROPS[cur].steps.length-1)show(0);
+  document.getElementById('play').textContent='⏸ Durdur';
+  timer=setInterval(()=>{if(n>=PROPS[cur].steps.length-1)stop();else show(n+1)},2400);
+}
+
+// ---------- arayüz ----------
+document.getElementById('tabs').innerHTML=PROPS.map((p,i)=>`<button class="tab" role="tab" data-prop="${i}">${p.tab}</button>`).join('');
+document.getElementById('tabs').onclick=e=>{const b=e.target.closest('[data-prop]');if(b)selectProp(+b.dataset.prop)};
+document.getElementById('refs').onclick=e=>{const b=e.target.closest('[data-go]');if(b)selectProp(+b.dataset.go)};
+document.getElementById('list').onclick=e=>{const b=e.target.closest('[data-step]');if(b){stop();show(+b.dataset.step)}};
+document.getElementById('prev').onclick=()=>{stop();show(n-1)};
+document.getElementById('next').onclick=()=>{stop();show(n+1)};
+document.getElementById('play').onclick=play;
+document.getElementById('restart').onclick=()=>{stop();show(0,'force')};
+document.getElementById('resetPos').onclick=()=>{pos[cur]=JSON.parse(JSON.stringify(PROPS[cur].init));render(false)};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();show(n+1)}
+  else if(e.key==='ArrowLeft'){stop();show(n-1)}
+  else if(e.key===' '&&e.target===document.body){e.preventDefault();play()}
+});
+
+// sürükleme
+function toSvg(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
+svg.addEventListener('pointerdown',e=>{
+  const h=e.target.closest('[data-drag]');if(!h)return;
+  drag=h.dataset.drag;svg.setPointerCapture(e.pointerId);svg.style.cursor='grabbing';e.preventDefault();
+});
+svg.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const p=toSvg(e),P=pos[cur],old=P[drag];
+  P[drag]={x:Math.max(15,Math.min(785,p.x)),y:Math.max(15,Math.min(585,p.y))};
+  // verilen noktalar birbirine çok yaklaşmasın
+  if(Object.entries(P).some(([k,q])=>k!==drag&&dist(q,P[drag])<25))P[drag]=old;
+  render(false);
+});
+const end=()=>{drag=null;svg.style.cursor=''};
+svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end);
+
+selectProp(0);
+</script>
+</body></html>
